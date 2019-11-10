@@ -22,7 +22,7 @@ from std_msgs.msg import String
 from sensor_msgs.msg import CompressedImage, Joy
 
 CAMERA_TOPIC = rospy.get_param('~/object_detector/camera_topic', '/camera/image_raw/compressed')
-AWS_REGION = rospy.get_param('~/object_detector/aws_region', 'us-west-2')
+AWS_REGION = rospy.get_param('~/object_detector/aws_region', 'us-east-1')
 AUTO_CAPTURE = rospy.get_param('~/object_detector/auto_capture', True)
 AUTO_CAPTURE_RATE = 1 # When using auto capture, take a photo every second
 IMAGE_CAPTURE_WAIT = 3 # At least 3 seconds between image captures to not spam rekognition
@@ -32,7 +32,9 @@ class ObjectDetector():
     def __init__(self):
         self.pub = rospy.Publisher('/detected_objects', String, queue_size=1)
         self.rekog = boto3.client('rekognition', AWS_REGION)
+	print(AWS_REGION)
         self.joysub = rospy.Subscriber("/joy", Joy, self.joystick_input)
+	self.imagesub = rospy.Subscriber(CAMERA_TOPIC, CompressedImage, self.get_image) 
         self.last_image_time = 0
 
     def joystick_input(self, data):
@@ -43,44 +45,33 @@ class ObjectDetector():
         if button_pressed and time.time() > self.last_image_time + IMAGE_CAPTURE_WAIT:
             self.last_image_time = time.time()
             self.process_image()
-
-    def process_image(self):
+    
+    def get_image(self, data):
         # Get picture from appropriate camera topic and send to Rekognition for labels
-        rospy.loginfo('Getting image from camera')
-        img = self.get_image()
+        rospy.logerr('Getting image from camera')
+        img = data.data
 
         if img is None:
             # No image was returned
             rospy.logwarn('No image was returned from the camera.')
 
-        rospy.loginfo('Sending image to Rekognition for analysis.')
+        rospy.logerr('Sending image to Rekognition for analysis.')
         # Call Rekognition
         try:
+	    print(AWS_REGION)
             response = self.rekog.detect_labels(
                 Image={'Bytes': img},
                 MinConfidence=50,
                 MaxLabels=10
             )
             labels = self.sort_labels(response)
-            rospy.loginfo('Following labels detected: %s' % (labels))
+            rospy.logerr('Following labels detected: %s' % (labels))
 
         except Exception as e:
             rospy.logerr('Error processing Rekognition: %s', e)
         else:
             # Write detected lables to /detected_objects
             self.pub.publish(",".join(labels))
-        
-        return
-    
-    def get_image(self):
-        image = None
-        try:
-            # Get one image from the camera and return it
-            image = rospy.wait_for_message(CAMERA_TOPIC, CompressedImage, timeout=3).data
-        except Exception as e:
-            rospy.logerr('Error getting image from camera: %s', e)
-        else:
-            return image
             
     def sort_labels(self, rek_response):
         '''Return labels sorted by confidence as JSON object'''
@@ -98,8 +89,7 @@ def main():
     
     rate = rospy.Rate(AUTO_CAPTURE_RATE) # Process an image once a second
     while not rospy.is_shutdown():
-        if AUTO_CAPTURE == True:
-            detector.process_image()
+	rospy.loginfo('Running object detector node')
         rate.sleep()
 
 

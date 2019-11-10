@@ -5,7 +5,7 @@
       "name": "Robot Build",
       "type": "colcon build",
       "cfg": {
-        "workingDir": "./aws-robomaker-sample-application-mars-rover/robot_ws",
+        "workingDir": "./aws-robomaker-sample-application-open-source-rover/robot_ws",
         "cmdArgs": ""
       }
     },
@@ -14,7 +14,7 @@
       "name": "Robot Bundle",
       "type": "colcon bundle",
       "cfg": {
-        "workingDir": "./aws-robomaker-sample-application-mars-rover/robot_ws",
+        "workingDir": "./aws-robomaker-sample-application-open-source-rover/robot_ws",
         "cmdArgs": ""
       }
     },
@@ -23,7 +23,7 @@
       "name": "Simulation Build",
       "type": "colcon build",
       "cfg": {
-        "workingDir": "./aws-robomaker-sample-application-mars-rover/simulation_ws",
+        "workingDir": "./aws-robomaker-sample-application-open-source-rover/simulation_ws",
         "cmdArgs": ""
       }
     },
@@ -32,7 +32,7 @@
       "name": "Simulation Bundle",
       "type": "colcon bundle",
       "cfg": {
-        "workingDir": "./aws-robomaker-sample-application-mars-rover/simulation_ws",
+        "workingDir": "./aws-robomaker-sample-application-open-source-rover/simulation_ws",
         "cmdArgs": ""
       }
     },
@@ -44,14 +44,24 @@
         "simulation": {
           "maxJobDurationInSeconds": 14400,
           "failureBehavior": "Fail",
-          "iamRole": "<YOUR_IAM_ROLE>",
-          "outputLocation": "<YOUR_S3_BUCKET>",
+          "iamRole": "arn:aws:iam::973250831689:role/robomaker-simulation-role",
+          "outputLocation": "obf-mars-rover-bucket-us-east-1-rmw-assets",
+          "vpcConfig": {
+            "subnets": [
+              "subnet-096366fc7770af481",
+              "subnet-0a6e2832e2c518a33"
+            ],
+            "securityGroups": [
+              "sg-0456a3cc1d97151cc"
+            ],
+            "assignPublicIp": false
+          },
           "tags": {}
         },
         "robotApp": {
           "name": "martian-detector-robot",
-          "sourceBundleFile": "./aws-robomaker-sample-application-mars-rover/robot_ws/bundle/output.tar",
-          "s3Bucket": "<YOUR_S3_BUCKET>",
+          "sourceBundleFile": "./aws-robomaker-sample-application-open-source-rover/robot_ws/bundle/output.tar",
+          "s3Bucket": "obf-mars-rover-bucket-us-east-1-rmw-assets",
           "architecture": "X86_64",
           "launchConfig": {
             "packageName": "martian_detector",
@@ -65,9 +75,9 @@
         },
         "simulationApp": {
           "name": "rover-sim",
-          "sourceBundleFile": "./aws-robomaker-sample-application-mars-rover/simulation_ws/bundle/output.tar",
+          "sourceBundleFile": "./aws-robomaker-sample-application-open-source-rover/simulation_ws/bundle/output.tar",
           "architecture": "X86_64",
-          "s3Bucket": "<YOUR_S3_BUCKET>",
+          "s3Bucket": "obf-mars-rover-bucket-us-east-1-rmw-assets",
           "launchConfig": {
             "packageName": "rover_gazebo",
             "launchFile": "main_with_objects.launch",
